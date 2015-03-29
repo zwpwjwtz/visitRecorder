@@ -1,9 +1,9 @@
 <?php
 /**
  *IP访问统计，防刷机可缓存
- *使用时会记录把访问信息记录在上一级目录的countVisit.txt文件中
+ *使用时会记录把访问信息记录在指定目录的countVisit.txt文件中
  *若需修改缓存数，更改VISIT_MAX_CACHE后面的数字即可
- *WTZ Software独家编写，WTZ Corporation 2006-2013版权所有。
+ *版权所有 zwpwjwtz@163.com 2006-2015。
 **/
 
 define('VISIT_MAX_CACHE',20);
