@@ -6,6 +6,10 @@ To make efficient use of disk space, the script introduces the cache system, so 
 
 The whole programme is licensed by GPLv3. Copyright zwpwjwtz@163.com.
 
+How to use
+----------------
+See 'index.php'.
+
 Important Notice
 ----------------
 This programme may cause legal issue of information security in some countries or regions. However, the author will not be responsible for any consequences.
