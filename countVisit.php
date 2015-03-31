@@ -6,8 +6,9 @@
  *版权所有 zwpwjwtz@163.com 2006-2015。
 **/
 
-define('VISIT_MAX_CACHE',20);
-define('VISIT_LOG_PATH','../');
+define('VISIT_MAX_CACHE',20);	//最大缓存IP数
+define('VISIT_LOG_PATH','../');	//访问记录的存储路径
+define('VISIT_CACHE_TIME',3600);	//在多长的时间内认为来自同一IP的访问是相同的
 
 function countVisit()
 { 
@@ -33,17 +34,21 @@ function countVisit()
 function isCached($ip)
 {
 	$cache_file=VISIT_LOG_PATH.'visitCache';
-	if (!file_exists($cache_file)) file_put_contents(VISIT_LOG_PATH.$cache_file,NULL);
+	if (!file_exists($cache_file)) file_put_contents($cache_file,NULL);
 	$cachedIP=file_get_contents($cache_file);
 	if (strstr($cachedIP,$ip))//匹配到完整的IP记录
 	{
-		$foundIP=substr($cachedIP,strpos($cachedIP,$ip),strlen($ip)+20);
-		if (date('Y-m-d')==substr($foundIP,strpos($foundIP,'@')+1,10) && date('H')==substr($foundIP,strpos($foundIP,':')-2,2))	return true;//缓存当天1小时内多次访问的记录
-	  	else 
-	  	{
-			$cachedIP=str_replace($foundIP,$ip.'@'.date('Y-m-d H:i:s').'|',$cachedIP);
-		file_put_contents($cache_file,$cachedIP,LOCK_EX);//否则更新
-		return false;
+		$p1=strpos($cachedIP,$ip);
+		$p2=strpos($cachedIP,"|",$p1);
+		if (!$p2) $p2=strlen($cachedIP)+1;
+		$foundRecord=substr($cachedIP,$p1,$p2-$p1);
+		if ((time()-(int)substr($foundRecord,strpos($foundRecord,'@')+1))<VISIT_CACHE_TIME)
+			return true;//若距上一次访问时间小于VISIT_CACHE_TIME，则不更新缓存
+		else 
+		{
+			$cachedIP=str_replace($foundRecord,$ip.'@'.time(),$cachedIP);
+			file_put_contents($cache_file,$cachedIP,LOCK_EX);//否则更新
+			return false;
 	  	}
 	}	  
 	else //没有则添加
@@ -52,13 +57,12 @@ function isCached($ip)
 		else $cachedIPArray=array();
 		if (count($cachedIPArray)< VISIT_MAX_CACHE)
 		{
-			$cachedIPArray[]=$ip.'@'.date('Y-m-d H:i:s');
+			$cachedIPArray[]=$ip.'@'.time();
 		}
 		else
 		{
-			array_splice($cachedIPArray,VISIT_MAX_CACHE-1);
-			//$cachedIPArray[]=$ip.'@'.date('Y-m-d H:i:s');
-			array_splice($cachedIPArray,0,0,$ip.'@'.date('Y-m-d H:i:s'));
+			array_pop($cachedIPArray);
+			$cachedIPArray=array_merge((array)($ip.'@'.time()),$cachedIPArray);
 		}
 		$cachedIP=implode('|',$cachedIPArray);
 		file_put_contents($cache_file,$cachedIP);
