@@ -1,14 +1,14 @@
 <?php
 /**
- *IP·ÃÎÊÍ³¼Æ£¬·ÀË¢»ú¿É»º´æ
- *Ê¹ÓÃÊ±»á¼ÇÂ¼°Ñ·ÃÎÊÐÅÏ¢¼ÇÂ¼ÔÚÖ¸¶¨Ä¿Â¼µÄcountVisit.txtÎÄ¼þÖÐ
- *ÈôÐèÐÞ¸Ä»º´æÊý£¬¸ü¸ÄVISIT_MAX_CACHEºóÃæµÄÊý×Ö¼´¿É
- *°æÈ¨ËùÓÐ zwpwjwtz@163.com 2006-2015¡£
+ * IPè®¿é—®ç»Ÿè®¡ï¼Œé˜²åˆ·æœºå¯ç¼“å­˜
+ * ä½¿ç”¨æ—¶ä¼šè®°å½•æŠŠè®¿é—®ä¿¡æ¯è®°å½•åœ¨æŒ‡å®šç›®å½•çš„countVisit.txtæ–‡ä»¶ä¸­
+ * è‹¥éœ€ä¿®æ”¹ç¼“å­˜æ•°ï¼Œæ›´æ”¹VISIT_MAX_CACHEåŽé¢çš„æ•°å­—å³å¯
+ * ç‰ˆæƒæ‰€æœ‰ zwpwjwtz(at)163.com 2006-2015ã€‚
 **/
 
-define('VISIT_MAX_CACHE',20);	//×î´ó»º´æIPÊý
-define('VISIT_LOG_PATH','../');	//·ÃÎÊ¼ÇÂ¼µÄ´æ´¢Â·¾¶
-define('VISIT_CACHE_TIME',3600);	//ÔÚ¶à³¤µÄÊ±¼äÄÚÈÏÎªÀ´×ÔÍ¬Ò»IPµÄ·ÃÎÊÊÇÏàÍ¬µÄ
+define('VISIT_MAX_CACHE',20);	//æœ€å¤§ç¼“å­˜IPæ•°
+define('VISIT_LOG_PATH','../');	//è®¿é—®è®°å½•çš„å­˜å‚¨è·¯å¾„
+define('VISIT_CACHE_TIME',3600);	//åœ¨å¤šé•¿çš„æ—¶é—´å†…è®¤ä¸ºæ¥è‡ªåŒä¸€IPçš„è®¿é—®æ˜¯ç›¸åŒçš„
 
 function countVisit()
 { 
@@ -36,22 +36,22 @@ function isCached($ip)
 	$cache_file=VISIT_LOG_PATH.'visitCache';
 	if (!file_exists($cache_file)) file_put_contents($cache_file,NULL);
 	$cachedIP=file_get_contents($cache_file);
-	if (strstr($cachedIP,$ip))//Æ¥Åäµ½ÍêÕûµÄIP¼ÇÂ¼
+	if (strstr($cachedIP,$ip))//åŒ¹é…åˆ°å®Œæ•´çš„IPè®°å½•
 	{
 		$p1=strpos($cachedIP,$ip);
 		$p2=strpos($cachedIP,"|",$p1);
 		if (!$p2) $p2=strlen($cachedIP)+1;
 		$foundRecord=substr($cachedIP,$p1,$p2-$p1);
 		if ((time()-(int)substr($foundRecord,strpos($foundRecord,'@')+1))<VISIT_CACHE_TIME)
-			return true;//Èô¾àÉÏÒ»´Î·ÃÎÊÊ±¼äÐ¡ÓÚVISIT_CACHE_TIME£¬Ôò²»¸üÐÂ»º´æ
+			return true;//è‹¥è·ä¸Šä¸€æ¬¡è®¿é—®æ—¶é—´å°äºŽVISIT_CACHE_TIMEï¼Œåˆ™ä¸æ›´æ–°ç¼“å­˜
 		else 
 		{
 			$cachedIP=str_replace($foundRecord,$ip.'@'.time(),$cachedIP);
-			file_put_contents($cache_file,$cachedIP,LOCK_EX);//·ñÔò¸üÐÂ
+			file_put_contents($cache_file,$cachedIP,LOCK_EX);//å¦åˆ™æ›´æ–°
 			return false;
 	  	}
 	}	  
-	else //Ã»ÓÐÔòÌí¼Ó
+	else //æ²¡æœ‰åˆ™æ·»åŠ 
 	{
 	 	if ($cachedIP)	$cachedIPArray=explode('|',$cachedIP);
 		else $cachedIPArray=array();
@@ -72,7 +72,7 @@ function isCached($ip)
 
 function maintainance(){
 	header('Content-Type: text/html; charset=UTF-8');
-	echo('Î¬»¤ÖÐ£¬ÇëÉÔºó·ÃÎÊ¡£ Maintainance mode now, please come here later.');
+	echo('ç»´æŠ¤ä¸­ï¼Œè¯·ç¨åŽè®¿é—®ã€‚ Maintainance mode now, please come here later.');
 	exit(0);
 }
 ?>
