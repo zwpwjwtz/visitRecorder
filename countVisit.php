@@ -70,9 +70,9 @@ function isCached($ip)
 	}
 }
 
-function maintainance(){
+function maintenance(){
 	header('Content-Type: text/html; charset=UTF-8');
-	echo('维护中，请稍后访问。 Maintainance mode now, please come here later.');
+	echo('维护中，请稍后访问。 Maintenance mode now, please come here later.');
 	exit(0);
 }
 ?>

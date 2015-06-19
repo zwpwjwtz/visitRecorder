@@ -12,8 +12,8 @@ countVisit();
 //if (isCached($ip)) echo $ip.' has visited.';
 //else echo $ip.' has not visited yet.';
 
-//Also, you can simply call maintainance() to interrupt the execution of php, which simply display a message and exit.
+//Also, you can simply call maintenance() to interrupt the execution of php, which simply display a message and exit.
 //This is sometimes useful in debugging.
-//maintainance();
+//maintenance();
 
 ?>
