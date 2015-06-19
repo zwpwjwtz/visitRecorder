@@ -7,8 +7,10 @@
 **/
 
 define('VISIT_LOG_PATH','../');	//访问记录的存储路径
-define('MAX_LOG_SIZE',100000);  //单个日志文件的最大尺寸
-define('LOG_NAME_FORMAT','visitRecord_%03d.txt');    //日志文件的命名格式(用于sprintf)
+define('VISIT_LOG_MAX_SIZE',100000);  //单个日志文件的最大尺寸
+define('VISIT_LOG_CURRENT_NAME','visitRecord.txt');     //当前所使用的日志文件名
+define('VISIT_LOG_MAX_NUMBER',1000);    //日志编号的最大值
+define('VISIT_LOG_NAME_FORMAT','visitRecord_%s.txt');    //分割后日志文件的命名格式(用于sprintf)
 
 define('VISIT_MAX_CACHE',20);	//最大缓存IP数
 define('VISIT_CACHE_TIME',3600);	//在多长的时间内认为来自同一IP的访问是相同的
@@ -16,7 +18,9 @@ define('VISIT_CACHE_TIME',3600);	//在多长的时间内认为来自同一IP的�
 
 function getLogFileName($logNumber)
 {
-    return VISIT_LOG_PATH.sprintf(LOG_NAME_FORMAT,$logNumber);
+    $digit=(int)log10(VISIT_LOG_MAX_NUMBER);
+    $logNumber=sprintf('%0'.$digit.'d',$logNumber);
+    return VISIT_LOG_PATH.sprintf(VISIT_LOG_NAME_FORMAT,substr($logNumber,strlen($logNumber)-$digit));
 }
 
 function getMaxLogNumber()
@@ -24,55 +28,54 @@ function getMaxLogNumber()
     //查找首次连续出现的文件序号的最大值
     //若存在序号不连续的文件，可能导致判断错误！
     $number=0;
-    $default=getLogFileName($number);
-    $probe=$default;
     
     //查找最小编号
-    while(!file_exists($probe))
+    while(!file_exists(getLogFileName($number)) && $number<VISIT_LOG_MAX_NUMBER)
     {
-        if ($probe==$default && $number!=0) break;
         $number++;
-        $probe=getLogFileName($number);
     }
     
     //查找最大编号
     $last=$number;
-    while(file_exists($probe))
+    while(file_exists(getLogFileName($number)))
     {
-        if ($probe==$default && $number!=0) break;
         $last=$number++;
-        $probe=getLogFileName($number);
     }
     
-    return $last;
+    return $last % VISIT_LOG_MAX_NUMBER;
 }
 
-function correctFileSize($filename,$number)
+function correctFileSize($filename)
 {
-    if (filesize($filename) > MAX_LOG_SIZE)
+    $temp='';
+    if (filesize($filename) > VISIT_LOG_MAX_SIZE)
     {
-        $n=(int)(filesize($filename) / MAX_LOG_SIZE);
         $fp=fopen($filename,'rb');
-        $firstPart='';
-        for($i=0;$i<filesize($filename);$i+=MAX_LOG_SIZE)
+        for($i=0;$i<filesize($filename);$i+=VISIT_LOG_MAX_SIZE)
         {
             fseek($fp,$i);
-            $temp=fread($fp,MAX_LOG_SIZE);
+            $temp=fread($fp,VISIT_LOG_MAX_SIZE);
             
             //避免将一个记录分割开来
             $p=strrpos($temp,"\n");
             $i-=strlen($temp)-$p-1;
             $temp=substr($temp,0,$p);
             
-            if ($firstPart=='')
-                $firstPart=$temp;
+            //写入新日志文件
+            if($i+VISIT_LOG_MAX_SIZE<filesize($filename))
+            {
+                $logNumber=getMaxLogNumber();
+                if ($logNumber>0) $logNumber++; //若编号未达到最大值，则写入到下一编号对应文件，否则写入到0号文件
+                $extraFile=getLogFileName($logNumber);
+                file_put_contents($extraFile,$temp,LOCK_EX);
+            }
             else
-                file_put_contents(getLogFileName($number),$temp);
-            
-            $number++;
+            {
+                break;
+            }
         }
         fclose($fp);
-        file_put_contents($filename,$firstPart);
+        file_put_contents($filename,$temp,LOCK_EX);
     }
 }
 
@@ -89,34 +92,12 @@ function countVisit()
                         //准备写入的记录
                         $addr=$addr.','.date('Y-m-d H:i:s')."\n";
                         
-                        //检查日志文件尺寸
-                        $log_number=getMaxLogNumber();
-                        $log_file=getLogFileName($log_number);
-                        if (!file_exists($log_file))
-                        {
-                            file_put_contents($log_file,NULL);
-                        }
-                        else
-                        {
-                            correctFileSize($log_file,$log_number,LOG_NAME_FORMAT);
-                            $log_number=getMaxLogNumber();
-                            $log_file=getLogFileName($log_number);
-                        }                        
-                        if (filesize($log_file)+strlen($addr) > MAX_LOG_SIZE)
-                        {
-                            $log_number++;
-                            $log_file=getLogFileName($log_number);
-                        }
-                        
                         //写入日志文件
-			$f=fopen($log_file,'a');
-  			if ($f)
-  			{
-				flock($f,LOCK_EX);
-  				fwrite($f,$addr);
-   				flock($f,LOCK_UN);
-			}	
-   			fclose($f);
+                        $log_file=VISIT_LOG_PATH.VISIT_LOG_CURRENT_NAME;
+                        file_put_contents($log_file,$addr,FILE_APPEND|LOCK_EX);
+                        
+                        //检查日志文件尺寸
+                        correctFileSize($log_file);
 		}
 	}
 }        
@@ -154,7 +135,7 @@ function isCached($ip)
 			$cachedIPArray=array_merge((array)($ip.'@'.time()),$cachedIPArray);
 		}
 		$cachedIP=implode('|',$cachedIPArray);
-		file_put_contents($cache_file,$cachedIP);
+		file_put_contents($cache_file,$cachedIP,LOCK_EX);
 		return false;
 	}
 }
