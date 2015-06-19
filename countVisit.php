@@ -16,14 +16,17 @@ function countVisit()
 	if(!isset($_SESSION['visited']))
 	{
 		$_SESSION['visited']=true;
-		$addr = ($_SERVER['HTTP_VIA']) ? $_SERVER['HTTP_X_FORWARDED_FOR'] : $_SERVER['REMOTE_ADDR'];
+                if (isset($_SERVER['HTTP_VIA']) && !empty($_SERVER['HTTP_VIA']))
+                    $addr = $_SERVER['HTTP_X_FORWARDED_FOR'];
+                else
+                    $addr = $_SERVER['REMOTE_ADDR'];
 		if ($addr=='unknown' || $addr=='' || !isCached($addr))
 		{
 			$f=fopen(VISIT_LOG_PATH.'visitRecord.txt','a');
   			if ($f)
   			{
 				flock($f,LOCK_EX);
-  				fwrite($f,$addr.','.date('Y-m-d H:i:s')."\n");
+  				fwrite($f,$addr.','.gmdate('Y-m-d H:i:s')."\n");
    				flock($f,LOCK_UN);
 			}	
    			fclose($f);
@@ -34,8 +37,10 @@ function countVisit()
 function isCached($ip)
 {
 	$cache_file=VISIT_LOG_PATH.'visitCache';
-	if (!file_exists($cache_file)) file_put_contents($cache_file,NULL);
-	$cachedIP=file_get_contents($cache_file);
+	if (file_exists($cache_file))
+            $cachedIP=file_get_contents($cache_file);
+        else
+            $cachedIP='';
 	if (strstr($cachedIP,$ip))//匹配到完整的IP记录
 	{
 		$p1=strpos($cachedIP,$ip);
