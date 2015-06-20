@@ -18,31 +18,33 @@ define('VISIT_CACHE_TIME',3600);	//在多长的时间内认为来自同一IP的�
 
 function getLogFileName($logNumber)
 {
-    $digit=(int)log10(VISIT_LOG_MAX_NUMBER);
-    $logNumber=sprintf('%0'.$digit.'d',$logNumber);
-    return VISIT_LOG_PATH.sprintf(VISIT_LOG_NAME_FORMAT,substr($logNumber,strlen($logNumber)-$digit));
+    $logNumber=sprintf('%0'.(int)log10(VISIT_LOG_MAX_NUMBER).'d',$logNumber % VISIT_LOG_MAX_NUMBER);
+    return VISIT_LOG_PATH.sprintf(VISIT_LOG_NAME_FORMAT,$logNumber);
 }
 
-function getMaxLogNumber()
+function getNextLogNumber()
 {
     //查找首次连续出现的文件序号的最大值
     //若存在序号不连续的文件，可能导致判断错误！
-    $number=0;
+    
+    //文件编号从1开始
+    $number=1;
     
     //查找最小编号
     while(!file_exists(getLogFileName($number)) && $number<VISIT_LOG_MAX_NUMBER)
     {
         $number++;
     }
+    if ($number==VISIT_LOG_MAX_NUMBER) return 1;
     
     //查找最大编号
-    $last=$number;
-    while(file_exists(getLogFileName($number)))
+    //当编号达到最大值时，默认写入0号文件，否则写入下一编号所对应的文件
+    while(file_exists(getLogFileName($number)) && $number!=VISIT_LOG_MAX_NUMBER)
     {
-        $last=$number++;
+        $number++;
     }
     
-    return $last % VISIT_LOG_MAX_NUMBER;
+    return $number % VISIT_LOG_MAX_NUMBER;
 }
 
 function correctFileSize($filename)
@@ -64,9 +66,7 @@ function correctFileSize($filename)
             //写入新日志文件
             if($i+VISIT_LOG_MAX_SIZE<filesize($filename))
             {
-                $logNumber=getMaxLogNumber();
-                if ($logNumber>0) $logNumber++; //若编号未达到最大值，则写入到下一编号对应文件，否则写入到0号文件
-                $extraFile=getLogFileName($logNumber);
+                $extraFile=getLogFileName(getNextLogNumber());
                 file_put_contents($extraFile,$temp,LOCK_EX);
             }
             else
