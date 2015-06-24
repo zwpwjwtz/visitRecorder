@@ -1,14 +1,17 @@
 <?php
 /**
  * IP访问统计，防刷机可缓存
- * 使用时会记录把访问信息记录在指定目录的countVisit.txt文件中
- * 若需修改缓存数，更改VISIT_MAX_CACHE后面的数字即可
+ * 访问信息记录到 VISIT_LOG_PATH 目录下 VISIT_LOG_CURRENT_NAME 所对应的文件中
+ * 可以通过指定 VISIT_LOG_ALLOW_SPLIT 来开启/关闭日志自动拆分功能
+ * 若需修改访问记录的缓存数，更改VISIT_MAX_CACHE后面的数字即可
  * 版权所有 zwpwjwtz(at)163.com 2006-2015。
 **/
 
 define('VISIT_LOG_PATH','../');	//访问记录的存储路径
-define('VISIT_LOG_MAX_SIZE',100000);  //单个日志文件的最大尺寸
 define('VISIT_LOG_CURRENT_NAME','visitRecord.txt');     //当前所使用的日志文件名
+
+define('VISIT_LOG_ALLOW_SPLIT',false);   //是否允许自动拆分日志文件
+define('VISIT_LOG_MAX_SIZE',100000);  //单个日志文件的最大尺寸
 define('VISIT_LOG_MAX_NUMBER',1000);    //日志编号的最大值
 define('VISIT_LOG_NAME_FORMAT','visitRecord_%s.txt');    //分割后日志文件的命名格式(用于sprintf)
 
@@ -97,7 +100,7 @@ function countVisit()
                         file_put_contents($log_file,$addr,FILE_APPEND|LOCK_EX);
                         
                         //检查日志文件尺寸
-                        correctFileSize($log_file);
+                        if (VISIT_LOG_ALLOW_SPLIT) correctFileSize($log_file);
 		}
 	}
 }        
