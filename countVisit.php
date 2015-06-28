@@ -19,13 +19,13 @@ define('VISIT_MAX_CACHE',50);	//最大缓存IP数
 define('VISIT_CACHE_TIME',3600);	//在多长的时间内认为来自同一IP的访问是相同的
 
 
-function getLogFileName($logNumber)
+function Visit_getLogFileName($logNumber)
 {
     $logNumber=sprintf('%0'.(int)log10(VISIT_LOG_MAX_NUMBER).'d',$logNumber % VISIT_LOG_MAX_NUMBER);
     return VISIT_LOG_PATH.sprintf(VISIT_LOG_NAME_FORMAT,$logNumber);
 }
 
-function getNextLogNumber()
+function Visit_getNextLogNumber()
 {
     //查找首次连续出现的文件序号的最大值
     //若存在序号不连续的文件，可能导致判断错误！
@@ -34,7 +34,7 @@ function getNextLogNumber()
     $number=1;
     
     //查找最小编号
-    while(!file_exists(getLogFileName($number)) && $number<VISIT_LOG_MAX_NUMBER)
+    while(!file_exists(Visit_getLogFileName($number)) && $number<VISIT_LOG_MAX_NUMBER)
     {
         $number++;
     }
@@ -42,7 +42,7 @@ function getNextLogNumber()
     
     //查找最大编号
     //当编号达到最大值时，默认写入0号文件，否则写入下一编号所对应的文件
-    while(file_exists(getLogFileName($number)) && $number!=VISIT_LOG_MAX_NUMBER)
+    while(file_exists(Visit_getLogFileName($number)) && $number!=VISIT_LOG_MAX_NUMBER)
     {
         $number++;
     }
@@ -50,7 +50,7 @@ function getNextLogNumber()
     return $number % VISIT_LOG_MAX_NUMBER;
 }
 
-function correctFileSize($filename)
+function Visit_correctFileSize($filename)
 {
     $temp='';
     if (filesize($filename) > VISIT_LOG_MAX_SIZE)
@@ -69,7 +69,7 @@ function correctFileSize($filename)
             //写入新日志文件
             if($i+VISIT_LOG_MAX_SIZE<filesize($filename))
             {
-                $extraFile=getLogFileName(getNextLogNumber());
+                $extraFile=Visit_getLogFileName(Visit_getNextLogNumber());
                 file_put_contents($extraFile,$temp,LOCK_EX);
             }
             else
@@ -83,7 +83,7 @@ function correctFileSize($filename)
 }
 
 
-function countVisit()
+function Visit_countVisit()
 { 
 	session_start();
 	if(!isset($_SESSION['visited']))
@@ -93,7 +93,7 @@ function countVisit()
                     $addr = $_SERVER['HTTP_X_FORWARDED_FOR'];
                 else
                     $addr = $_SERVER['REMOTE_ADDR'];
-		if ($addr=='unknown' || $addr=='' || !isCached($addr))
+		if ($addr=='unknown' || $addr=='' || !Visit_isCached($addr))
 		{
                         //准备写入的记录
                         $addr=$addr.','.date('Y-m-d H:i:s')."\n";
@@ -103,12 +103,12 @@ function countVisit()
                         file_put_contents($log_file,$addr,FILE_APPEND|LOCK_EX);
                         
                         //检查日志文件尺寸
-                        if (VISIT_LOG_ALLOW_SPLIT) correctFileSize($log_file);
+                        if (VISIT_LOG_ALLOW_SPLIT) Visit_correctFileSize($log_file);
 		}
 	}
 }        
 
-function isCached($ip)
+function Visit_isCached($ip)
 {
 	$cache_file=VISIT_LOG_PATH.'visitCache';        
 	$cachedIP=file_get_contents($cache_file);
@@ -146,7 +146,7 @@ function isCached($ip)
 	}
 }
 
-function maintenance(){
+function Visit_maintenance(){
 	header('Content-Type: text/html; charset=UTF-8');
 	echo('维护中，请稍后访问。 Maintenance mode now, please come here later.');
 	exit(0);
