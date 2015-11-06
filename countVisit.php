@@ -89,11 +89,11 @@ function Visit_countVisit()
 	if(!isset($_SESSION['visited']))
 	{
 		$_SESSION['visited']=true;
-                if (isset($_SERVER['HTTP_VIA']) && !empty($_SERVER['HTTP_VIA']))
-                    $addr = $_SERVER['HTTP_X_FORWARDED_FOR'];
-                else
+                if (isset($_SERVER['HTTP_X_FORWARDED_FOR']))
+                    $addr = $_SERVER['HTTP_X_FORWARDED_FOR'];   //优先使用HTTP_X_FORWARDED_FOR
+                if (empty($addr))
                     $addr = $_SERVER['REMOTE_ADDR'];
-		if ($addr=='unknown' || $addr=='' || !Visit_isCached($addr))
+		if (empty($addr) || $addr=='unknown' || !Visit_isCached($addr))
 		{
                         //准备写入的记录
                         $addr=$addr.','.date('Y-m-d H:i:s')."\n";
