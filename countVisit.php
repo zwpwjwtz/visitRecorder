@@ -50,13 +50,10 @@ function Visit_getNextLogNumber()
     return $number % VISIT_LOG_MAX_NUMBER;
 }
 
-function Visit_correctFileSize($filename)
+function __splitFile($fp,$filesize)
 {
-    $temp='';
-    if (filesize($filename) > VISIT_LOG_MAX_SIZE)
-    {
-        $fp=fopen($filename,'rb');
-        for($i=0;$i<filesize($filename);$i+=VISIT_LOG_MAX_SIZE)
+        //此函数用于解决并发读取问题，仅用于内部调用
+        for($i=0;$i<$filesize;$i+=VISIT_LOG_MAX_SIZE)
         {
             fseek($fp,$i);
             $temp=fread($fp,VISIT_LOG_MAX_SIZE);
@@ -67,7 +64,7 @@ function Visit_correctFileSize($filename)
             $temp=substr($temp,0,$p);
             
             //写入新日志文件
-            if($i+VISIT_LOG_MAX_SIZE<filesize($filename))
+            if($i+VISIT_LOG_MAX_SIZE<$filesize)
             {
                 $extraFile=Visit_getLogFileName(Visit_getNextLogNumber());
                 file_put_contents($extraFile,$temp,LOCK_EX);
@@ -77,8 +74,18 @@ function Visit_correctFileSize($filename)
                 break;
             }
         }
+        ftruncate($fp,0);
+        fwrite($fp,$temp);
+}
+
+function Visit_correctFileSize($filename)
+{
+    $temp='';
+    if (filesize($filename) > VISIT_LOG_MAX_SIZE)
+    {
+        $fp=fopen($filename,'rb+');
+        __splitFile($fp,filesize($filename));
         fclose($fp);
-        file_put_contents($filename,$temp,LOCK_EX);
     }
 }
 
@@ -100,10 +107,11 @@ function Visit_countVisit()
                         
                         //写入日志文件
                         $log_file=VISIT_LOG_PATH.VISIT_LOG_CURRENT_NAME;
-                        file_put_contents($log_file,$addr,FILE_APPEND|LOCK_EX);
+                        $fp=fopen($log_file,'ab+',LOCK_EX);
+                        fwrite($fp,$addr);
                         
                         //检查日志文件尺寸
-                        if (VISIT_LOG_ALLOW_SPLIT) Visit_correctFileSize($log_file);
+                        if (VISIT_LOG_ALLOW_SPLIT && filesize($log_file)>VISIT_LOG_MAX_SIZE) __splitFile($fp,filesize($log_file));
 		}
 	}
 }        
