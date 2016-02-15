@@ -83,7 +83,7 @@ function Visit_correctFileSize($filename)
     $temp='';
     if (filesize($filename) > VISIT_LOG_MAX_SIZE)
     {
-        $fp=fopen($filename,'rb+');
+        $fp=fopen($filename,'rb+',LOCK_EX);
         __splitFile($fp,filesize($filename));
         fclose($fp);
     }
@@ -112,6 +112,8 @@ function Visit_countVisit()
                         
                         //检查日志文件尺寸
                         if (VISIT_LOG_ALLOW_SPLIT && filesize($log_file)>VISIT_LOG_MAX_SIZE) __splitFile($fp,filesize($log_file));
+                        
+                        fclose($fp);
 		}
 	}
 }        
